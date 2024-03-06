@@ -1,20 +1,29 @@
 package main
 
 import (
-	"fmt"
-	"os"
+	"log"
 
 	"github.com/pulkit-tanwar/temporal-workflow/app"
+
+	"go.temporal.io/sdk/client"
+	"go.temporal.io/sdk/worker"
 )
 
 func main() {
 
-	name := "stranger"
+	c, err := client.Dial(client.Options{})
+	if err != nil {
+		log.Fatalln("Unable to create client: ", err)
+	}
+	defer c.Close()
 
-	if len(os.Args) > 1 {
-		name = os.Args[1]
+	w := worker.New(c, "greeting-tasks", worker.Options{})
+
+	w.RegisterWorkflow(app.GreetSomeone)
+
+	err = w.Run(worker.InterruptCh())
+	if err != nil {
+		log.Fatalln("Unable to start worker", err)
 	}
 
-	ans := app.GreetSomeone(name)
-	fmt.Println(ans)
 }
